@@ -25,6 +25,9 @@ SELF_CMD="$0"
 
 KUBECTX="${XDG_CACHE_HOME:-$HOME/.kube}/kubectx"
 
+PRE_SWITCH_HOOK="${_KUBECTX_PRE_SWITCH_HOOK:-}"
+POST_SWITCH_HOOK="${_KUBECTX_POST_SWITCH_HOOK:-}"
+
 usage() {
   local SELF
   SELF="kubectx"
@@ -123,14 +126,30 @@ choose_context_interactive() {
   fi
 }
 
+pre_switch_hook() {
+  if [[ -x "${PRE_SWITCH_HOOK}" ]]; then 
+    ${PRE_SWITCH_HOOK} "${1}" 2>&1
+  fi
+}
+
 set_context() {
   local prev
   prev="$(current_context)" || exit_err "error getting current context"
 
+  pre_switch_hook "${1}"
+
   switch_context "${1}"
+
+  post_switch_hook "${1}"
 
   if [[ "${prev}" != "${1}" ]]; then
     save_context "${prev}"
+  fi
+}
+
+post_switch_hook() {
+  if [[ -x "${POST_SWITCH_HOOK}" ]]; then 
+    ${POST_SWITCH_HOOK} "${1}" 2>&1
   fi
 }
 
